@@ -1,27 +1,28 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const { MongoClient } = require('mongodb');
+
 const app = express();
 const PORT = 4000;
 
 app.use(cors());
 app.use(express.json());
 
-const sessions = new Map();
+const client = new MongoClient(process.env.MONGODB_URI);
 
-app.post('/session/event', (req, res) => {
-  const sessionId = req.headers['x-session-id'];
-  const event = req.body;
+let db, sessions;
 
-  if (!sessions.has(sessionId)) {
-    sessions.set(sessionId, []);
-  }
+async function startServer() {
+  await client.connect();
+  db = client.db(); // Uses default DB from connection URI
+  sessions = db.collection('sessions');
 
-  sessions.get(sessionId).push(event);
-  console.log(`[Session ${sessionId}]`, event);
+  app.post('/session/event', async (req, res) => {
+    const sessionId = req.headers['x-session-id'];
+    const event = req.body;
 
-  res.status(200).json({ success: true });
-});
-
-app.listen(PORT, () => {
-  console.log(`BugHawk Collector API running at http://localhost:${PORT}`);
-});
+    const session = await sessions.findOne({ sessionId });
+    if (!session) {
+      await sessions.insertOne({ sessionId, events: [event] });
+    } else {

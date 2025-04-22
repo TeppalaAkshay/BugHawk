@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>BugHawk SDK Test</title>
+  </head>
+  <body>
+    <h1>Click anywhere or cause an error</h1>
+    <button onclick="throw new Error('Simulated bug')">Break Me</button>
+
+    <script type="module">
+      import BugHawkSDK from './index.ts';
+      BugHawkSDK.start();
+    </script>
+  </body>
+</html>
